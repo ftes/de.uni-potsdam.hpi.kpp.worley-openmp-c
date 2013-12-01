@@ -106,29 +106,27 @@ void fillMap(float *map, float &min, float &max)
 {
 //set up some variables
 
-    int	i,//iterator
-        x,y,//location variables
-        octaves = 8;//octaves (levels of detail or number of passes)
-
-    float gain = 0.65f, //modifier for the amplitude
-          lacunarity = 2.0f, //modifier for the frequency
-          total,frequency,amplitude,offset; //used for calculations
+    int	octaves = 8;//octaves (levels of detail or number of passes)
 
     min=10000.0f;
     max=0.0f;//for averaging
 
 //get started
     #pragma omp parallel for collapse(2)
-    for (x=0; x<hgrid; ++x)
+    for (int x=0; x<hgrid; ++x)
     {
-        for (y=0; y<vgrid; ++y)
+        for (int y=0; y<vgrid; ++y)
         {
+            float gain = 0.65f, //modifier for the amplitude
+                  lacunarity = 2.0f, //modifier for the frequency
+                  total,frequency,amplitude,offset; //used for calculations
+
             //for each pixel, get the value
             total = 0.0f;
             frequency = 1.0f/(float)hgrid;
             amplitude = 1.0f;
 
-            for (i = 0; i < octaves; ++i)
+            for (int i = 0; i < octaves; ++i)
             {
                 offset = (float)i * 7.0f;//this is just to add variance between layers
 
@@ -138,13 +136,18 @@ void fillMap(float *map, float &min, float &max)
                 amplitude *= gain;
             }
 
+            #pragma omp atomic write
             map[x + y * hgrid] = total;
 
             //just do some minor calculations while we're here anyway
-            if (total<min)
+            if (total<min) {
+                #pragma omp atomic write
                 min = total;
-            if (total>max)
+            }
+            if (total>max) {
+                #pragma omp atomic write
                 max = total;
+            }
         }
     }
 }
@@ -300,7 +303,7 @@ void printMap(float *map, float min, float max)
     //3.2 put in the elements of the array
     color newcolor(0,0,0);
 
-    #pragma omp parallel for collapse(2) ordered firstprivate(newcolor)
+    //#pragma omp parallel for collapse(2) ordered firstprivate(newcolor)
     for (i=(vgrid-1); i>=0; i--) //bitmaps start with the bottom row, and work their way up...
     {
         for (j=0; j<hgrid; j++) //...but still go left to right
@@ -322,7 +325,7 @@ void printMap(float *map, float min, float max)
             //uncomment the line below to make it black 'n' white
             //newcolor = lerp(black,white,map[j][i]/diff);
 
-            #pragma omp ordered
+            //#pragma omp ordered
             {
                 out.put(char(newcolor.v[0]));//blue
                 out.put(char(newcolor.v[1]));//green
