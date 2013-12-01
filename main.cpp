@@ -24,8 +24,7 @@ struct color{
 };
 
 /********************************************SIZE DEFINITIONS***/
-const unsigned hgrid = 500,//x dimension of the grid (can be anything >= 1)
-			   vgrid = hgrid;//y dimension of the grid (can be anything >= 1 (hgrid and vgrid can differ); I only do this to make a square image)
+unsigned int hgrid, vgrid;
 
 /*********************************************SEED DEFINITION***/
 int permutations[256];
@@ -35,8 +34,8 @@ int ranInt();
 float random(int x, int y, int z);
 color lerp(color c1, color c2, float value);//LERP = Linear intERPolation
 
-void fillMap(float map[][vgrid], float &min, float &max);// this is the algorithm part (the interesting part)
-void printMap(float map[][vgrid], float min, float max);//bitmap part
+void fillMap(float *map, float &min, float &max);// this is the algorithm part (the interesting part)
+void printMap(float *map, float min, float max);//bitmap part
 void printPage(time_t beginning, time_t end);//webpage part
 
 float smoothedNoise(float x,float y);
@@ -46,8 +45,11 @@ float chebychev(float x1, float y1, float x2, float y2);
 float quadratic(float x1, float y1, float x2, float y2);
 
 /********************************************************MAIN***/
-int main()
+int main(int argc, char* argv[])
 {
+    hgrid = atoi(argv[1]);
+    vgrid = atoi(argv[2]);
+
 	time_t beginning = time(NULL),//these two are used to time our algorithm
 		   end;
 
@@ -66,7 +68,7 @@ int main()
 		permutations[k]=j;
 	}
 
-	float map[hgrid][vgrid];//make the empty array
+	float* map = (float*)malloc(sizeof(float)*hgrid*vgrid);
 
 	float min,max;
 
@@ -98,7 +100,7 @@ color lerp(color c1, color c2, float value){
 	return (tcolor);
 }
 
-void fillMap(float map[][vgrid], float &min, float &max)
+void fillMap(float *map, float &min, float &max)
 {
 //set up some variables
 
@@ -133,8 +135,7 @@ void fillMap(float map[][vgrid], float &min, float &max)
 				amplitude *= gain;
 			}
 
-			//now that we have the value, put it in
-			map[x][y] = total;
+			map[x + y * hgrid] = total;
 
 			//just do some minor calculations while we're here anyway
 			if (total<min)
@@ -213,7 +214,7 @@ float smoothedNoise(float x, float y)
 	//return (distance2);
 }
 
-void printMap(float map[][vgrid], float min, float max)
+void printMap(float *map, float min, float max)
 {
 //set up some variables
 	float diff = max-min,
@@ -295,19 +296,19 @@ void printMap(float map[][vgrid], float min, float max)
 
 	for (i=(vgrid-1);i>=0;i--){//bitmaps start with the bottom row, and work their way up...
 		for (j=0;j<hgrid;j++){//...but still go left to right
-			map[j][i]-=min;
+			map[j + i * hgrid] -= min;
 
 			//if this point is below the floodline...
-			if (map[j][i]<flood)
-				newcolor=lerp(waterlow,waterhigh,map[j][i]/flood);
+			if (map[j + i * hgrid]<flood)
+				newcolor=lerp(waterlow,waterhigh,map[j + i * hgrid]/flood);
 
 			//if this is above the mountain line...
-			else if (map[j][i]>mount)
-				newcolor=lerp(mountlow,mounthigh,(map[j][i]-mount)/(diff-mount));
+			else if (map[j + i * hgrid]>mount)
+				newcolor=lerp(mountlow,mounthigh,(map[j + i * hgrid]-mount)/(diff-mount));
 
 			//if this is regular land
 			else
-				newcolor=lerp(landlow,landhigh,(map[j][i]-flood)/(mount-flood));
+				newcolor=lerp(landlow,landhigh,(map[j + i * hgrid]-flood)/(mount-flood));
 
 			//uncomment the line below to make it black 'n' white
 			//newcolor = lerp(black,white,map[j][i]/diff);
