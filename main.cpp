@@ -9,13 +9,13 @@
 using namespace std;
 
 /*****************************************FILENAME DEFINITION***/
-const char oname[16]="test.bmp";
+const char oname[20]="output.bmp";
 
 /*******************************************STRUCT DEFINITION***/
 struct color{
 	//v[0]=red, v[1]=green, v[2]=blue
 	unsigned char v[3];
-	
+
 	color(unsigned char r, unsigned char g, unsigned char b){
 		v[0]=r;
 		v[1]=g;
@@ -67,15 +67,15 @@ int main()
 	}
 
 	float map[hgrid][vgrid];//make the empty array
-	
+
 	float min,max;
 
 	//now that the blank map is set up, unblank it
 	fillMap(map, min, max);
-	
+
 	//now that we have an interesting map, create a .BMP file
 	printMap(map, min, max);
-	
+
 	//finally, output a webpage
 	end = time(NULL);//set it to now
 	printPage(beginning, end);
@@ -86,7 +86,7 @@ int main()
 /***************************************FUNCTION DECLARATIONS***/
 color lerp(color c1, color c2, float value){
 	color tcolor(0,0,0);
-	
+
 	for (int g=0;g<3;g++){
 		if (c1.v[g]>c2.v[g])
 			tcolor.v[g]=c2.v[g]+(unsigned char)(float(c1.v[g]-c2.v[g])*value);
@@ -94,25 +94,25 @@ color lerp(color c1, color c2, float value){
 		else
 			tcolor.v[g]=c1.v[g]+(unsigned char)(float(c2.v[g]-c1.v[g])*value);
 	}
-	
+
 	return (tcolor);
 }
 
 void fillMap(float map[][vgrid], float &min, float &max)
 {
 //set up some variables
-	
+
 	int	i,//iterator
 		x,y,//location variables
 		octaves = 8;//octaves (levels of detail or number of passes)
-	
+
 	float gain = 0.65f, //modifier for the amplitude
 		  lacunarity = 2.0f, //modifier for the frequency
 		  total,frequency,amplitude,offset; //used for calculations
-	
+
 	min=10000.0f;
 	max=0.0f;//for averaging
-	
+
 //get started
 	for (x=0;x<hgrid;++x)
 	{
@@ -122,20 +122,20 @@ void fillMap(float map[][vgrid], float &min, float &max)
 			total = 0.0f;
 			frequency = 1.0f/(float)hgrid;
 			amplitude = 1.0f;
-			
+
 			for (i = 0; i < octaves; ++i)
 			{
 				offset = (float)i * 7.0f;//this is just to add variance between layers
 
 				total += smoothedNoise((float)x * frequency + offset, (float)y * frequency + offset) * amplitude;
-				
+
 				frequency *= lacunarity;
 				amplitude *= gain;
 			}
-			
+
 			//now that we have the value, put it in
 			map[x][y] = total;
-			
+
 			//just do some minor calculations while we're here anyway
 			if (total<min)
 				min = total;
@@ -154,7 +154,7 @@ float random(int x, int y, int z){
 int ranInt(){
 	int r;
 
-	
+
 	r=rand();
 
 
@@ -172,7 +172,7 @@ float smoothedNoise(float x, float y)
 			points[3][3][2],
 			temp_dis,
 			distance1,distance2;
-	
+
 	//get the point inside the current square, and the point inside the 8 surrounding squares
 	for (i = 0;i<3;++i)
 	{
@@ -184,10 +184,10 @@ float smoothedNoise(float x, float y)
 			points[i][j][1] = tempy + random(tempx, tempy, 2);
 		}
 	}
-	
+
 	//get the distance to the closest point from x, y
 	distance1 = distance2 = FLT_MAX;
-	
+
 	for (i = 0; i < 3; ++i)
 	{
 		for (j = 0; j < 3; ++j)
@@ -196,7 +196,7 @@ float smoothedNoise(float x, float y)
 			//temp_dis = manhattan(x,y,points[i][j][0],points[i][j][1]);
 			//temp_dis = chebychev(x,y,points[i][j][0],points[i][j][1]);
 			//temp_dis = quadratic(x,y,points[i][j][0],points[i][j][1]);
-			
+
 			if (temp_dis < distance1)
 			{
 				if (distance1 < distance2)
@@ -208,7 +208,7 @@ float smoothedNoise(float x, float y)
 				distance2 = temp_dis;
 		}
 	}
-	
+
 	return (1.0f - distance1);//this just inverts it
 	//return (distance2);
 }
@@ -219,12 +219,12 @@ void printMap(float map[][vgrid], float min, float max)
 	float diff = max-min,
 		  flood=0.5f,//flood level
 		  mount=0.85f;//mountain level
-	
+
 	flood*=diff;
 	mount*=diff;
-	
+
 	int i,j,k;
-	
+
 	//these can be changed for interesting results
 	color landlow(0,64,0),
 		  landhigh(116,182,133),
@@ -243,75 +243,75 @@ void printMap(float map[][vgrid], float min, float max)
 		cout << "Target file opening error"<<endl;
 		exit(0);
 	}
-	
+
 	//3.1.2 copy the header
 		//3.1.2.1 magic number
 		out.put(char(66));
 		out.put(char(77));
-		
+
 		//3.1.2.2 filsize/unused space
 		for (i=0;i<8;i++)
 			out.put(char(0));
-		
+
 		//3.1.2.3 data offset
 		out.put(char(54));
-		
+
 		//3.1.2.4 unused space
 		for (i=0;i<3;i++)
 			out.put(char(0));
-		
+
 		//3.1.2.5 header size
 		out.put(char(40));
-		
+
 		//3.1.2.6 unused space
 		for (i=0;i<3;i++)
 			out.put(char(0));
-		
+
 		//3.1.2.7 file width (trickier)
 		out.put(char(hgrid%256));
 		out.put(char((hgrid>>8)%256));
 		out.put(char((hgrid>>16)%256));
 		out.put(char((hgrid>>24)%256));
-		
+
 		//3.1.2.8 file height (trickier)
 		out.put(char(vgrid%256));
 		out.put(char((vgrid>>8)%256));
 		out.put(char((vgrid>>16)%256));
 		out.put(char((vgrid>>24)%256));
-		
+
 		//3.1.2.9 color planes
 		out.put(char(1));
 		out.put(char(0));
-		
+
 		//3.1.2.10 bit depth
 		out.put(char(24));
-		
+
 		//3.1.2.11 the rest
 		for (i=0;i<25;i++)
 			out.put(char(0));
-	
+
 	//3.2 put in the elements of the array
 	color newcolor(0,0,0);
-	
+
 	for (i=(vgrid-1);i>=0;i--){//bitmaps start with the bottom row, and work their way up...
 		for (j=0;j<hgrid;j++){//...but still go left to right
 			map[j][i]-=min;
-			
+
 			//if this point is below the floodline...
 			if (map[j][i]<flood)
 				newcolor=lerp(waterlow,waterhigh,map[j][i]/flood);
-			
+
 			//if this is above the mountain line...
 			else if (map[j][i]>mount)
 				newcolor=lerp(mountlow,mounthigh,(map[j][i]-mount)/(diff-mount));
-			
+
 			//if this is regular land
 			else
 				newcolor=lerp(landlow,landhigh,(map[j][i]-flood)/(mount-flood));
-			
+
 			//uncomment the line below to make it black 'n' white
 			//newcolor = lerp(black,white,map[j][i]/diff);
-			
+
 			out.put(char(newcolor.v[0]));//blue
 			out.put(char(newcolor.v[1]));//green
 			out.put(char(newcolor.v[2]));//red
@@ -320,7 +320,7 @@ void printMap(float map[][vgrid], float min, float max)
 		for (k=0;k<(hgrid%4);k++)
 			out.put(char(0));
 	}
-	
+
 	//3.3 end the file
 	out.close();
 }
@@ -332,7 +332,7 @@ void printPage(time_t beginning, time_t end)
 		<<"<html><head><title>FTG Page</title></head>\n"
 		<<"<body>\n"
 		<<"<h2>Fractal Terrain Generator Page</h2>\n"
-		<<"<img src=\"test.bmp\" /><br />\n"
+		<<"<img src=\"output.bmp\" /><br />\n"
 		<<"This took " << timeTaken << " seconds to create.<br />\n"
 		<<"</body>\n"
 		<<"</html>\n";
