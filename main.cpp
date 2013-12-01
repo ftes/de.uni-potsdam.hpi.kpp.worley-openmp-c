@@ -5,6 +5,7 @@
 #include <cmath>
 #include <ctime>
 #include <cfloat>
+#include <omp.h>
 
 using namespace std;
 
@@ -50,10 +51,9 @@ int main(int argc, char* argv[])
     hgrid = atoi(argv[1]);
     vgrid = atoi(argv[2]);
 
-	time_t beginning = time(NULL),//these two are used to time our algorithm
-		   end;
+	double start = omp_get_wtime();
 
-	srand((unsigned)beginning);
+	srand((unsigned)time(NULL));
 
 	int i,j,k;
 
@@ -78,9 +78,7 @@ int main(int argc, char* argv[])
 	//now that we have an interesting map, create a .BMP file
 	printMap(map, min, max);
 
-	//finally, output a webpage
-	end = time(NULL);//set it to now
-	printPage(beginning, end);
+	printf("Runtime: %fs\n", omp_get_wtime() - start);
 
 	return (0);
 }
